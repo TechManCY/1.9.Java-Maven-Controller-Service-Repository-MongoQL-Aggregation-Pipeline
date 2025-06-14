@@ -21,7 +21,6 @@ public class StudentAggregation {
 
     public List<Document> getStudentClassTimeAggregation() {
 
-        // Unwind classes, preserve empty arrays (true)
         UnwindOperation unwindClasses = Aggregation.unwind("classes", true);
 
         GroupOperation groupByStudentAndSubject = Aggregation.group(
@@ -29,16 +28,15 @@ public class StudentAggregation {
                 .sum("classes.hoursTutorial").as("totalTutorialHours")
                 .sum("classes.hoursLesson").as("totalLectureHours");
 
-        GroupOperation groupByStudent = Aggregation.group("_id.studentId", "_id.firstName", "_id.lastName") // Corrected: refer to fields within _id
+        GroupOperation groupByStudent = Aggregation.group("_id.studentId", "_id.firstName", "_id.lastName")
                 .push(
                         new Document()
-                                .append("subjectName", "$_id.subjectName") // Corrected: refer to subjectName from the _id of the previous stage
+                                .append("subjectName", "$_id.subjectName")
                                 .append("totalHours", new Document("$add", Arrays.asList("$totalTutorialHours", "$totalLectureHours")))
                 ).as("subjects")
                 .sum("totalTutorialHours").as("totalTutorialHours")
                 .sum("totalLectureHours").as("totalLectureHours");
 
-        // Project the final result: studentName concatenated and total hours
         ProjectionOperation projectFinal = Aggregation.project()
                 .and("_id.studentId").as("studentId")
                 //.andExpression("concat(_id.firstName, ' ', _id.lastName)").as("studentName")
